@@ -425,56 +425,52 @@ def render_recommendation(resultado):
     aposta = resultado["aposta"]
     protecao = resultado["protecao"]
 
-    st.markdown(f"""
-    <div class="reco-card">
-        <div class="reco-title">
-            {vies_emoji} Para operar {resultado['ticker']} com viés de {vies_label}
-            — {resultado['estrategia']}
-        </div>
+    html_content = f"""<div class="reco-card">
+<div class="reco-title">
+{vies_emoji} Para operar {resultado['ticker']} com viés de {vies_label} — {resultado['estrategia']}
+</div>
+<div class="reco-line">
+<span class="reco-action">COMPRE</span>
+<span class="reco-qty">{aposta['qtd']}</span>
+<span>opções</span>
+<span class="reco-ticker">{aposta['ticker_opcao']}</span>
+<span class="reco-detail">
+{aposta['label']} · Δ {aposta['delta']:.2f} · R$ {aposta['preco']:.2f} · Strike {aposta['strike']:.2f}
+</span>
+</div>
+<div class="reco-line">
+<span class="reco-action">COMPRE</span>
+<span class="reco-qty">{protecao['qtd']}</span>
+<span>opções</span>
+<span class="reco-ticker">{protecao['ticker_opcao']}</span>
+<span class="reco-detail">
+{protecao['label']} · Δ {protecao['delta']:.2f} · R$ {protecao['preco']:.2f} · Strike {protecao['strike']:.2f}
+</span>
+</div>
+<div class="reco-cost">
+<div class="reco-cost-item">
+<div class="reco-cost-value">R$ {resultado['custo_total']:,.2f}</div>
+<div class="reco-cost-label">Custo Total</div>
+</div>
+<div class="reco-cost-item">
+<div class="reco-cost-value">R$ {aposta['custo']:,.2f}</div>
+<div class="reco-cost-label">Custo Aposta</div>
+</div>
+<div class="reco-cost-item">
+<div class="reco-cost-value">R$ {protecao['custo']:,.2f}</div>
+<div class="reco-cost-label">Custo Proteção</div>
+</div>
+<div class="reco-cost-item">
+<div class="reco-cost-value">{resultado['cobertura_pct']:.0f}%</div>
+<div class="reco-cost-label">Cobertura Estimada</div>
+</div>
+<div class="reco-cost-item">
+<span class="badge-protecao {protecao_badge}">{protecao_label} ({resultado['proporcao']})</span>
+</div>
+</div>
+</div>"""
 
-        <div class="reco-line">
-            <span class="reco-action">COMPRE</span>
-            <span class="reco-qty">{aposta['qtd']}</span>
-            <span>opções</span>
-            <span class="reco-ticker">{aposta['ticker_opcao']}</span>
-            <span class="reco-detail">
-                {aposta['label']} · Δ {aposta['delta']:.2f} · R$ {aposta['preco']:.2f} · Strike {aposta['strike']:.2f}
-            </span>
-        </div>
-
-        <div class="reco-line">
-            <span class="reco-action">COMPRE</span>
-            <span class="reco-qty">{protecao['qtd']}</span>
-            <span>opções</span>
-            <span class="reco-ticker">{protecao['ticker_opcao']}</span>
-            <span class="reco-detail">
-                {protecao['label']} · Δ {protecao['delta']:.2f} · R$ {protecao['preco']:.2f} · Strike {protecao['strike']:.2f}
-            </span>
-        </div>
-
-        <div class="reco-cost">
-            <div class="reco-cost-item">
-                <div class="reco-cost-value">R$ {resultado['custo_total']:,.2f}</div>
-                <div class="reco-cost-label">Custo Total</div>
-            </div>
-            <div class="reco-cost-item">
-                <div class="reco-cost-value">R$ {aposta['custo']:,.2f}</div>
-                <div class="reco-cost-label">Custo Aposta</div>
-            </div>
-            <div class="reco-cost-item">
-                <div class="reco-cost-value">R$ {protecao['custo']:,.2f}</div>
-                <div class="reco-cost-label">Custo Proteção</div>
-            </div>
-            <div class="reco-cost-item">
-                <div class="reco-cost-value">{resultado['cobertura_pct']:.0f}%</div>
-                <div class="reco-cost-label">Cobertura Estimada</div>
-            </div>
-            <div class="reco-cost-item">
-                <span class="badge-protecao {protecao_badge}">{protecao_label} ({resultado['proporcao']})</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(html_content, unsafe_allow_html=True)
 
 
 def render_payoff_chart(resultado):
