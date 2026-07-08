@@ -638,7 +638,7 @@ def main():
     with col_info:
         st.markdown(
             f"<p style='color: rgba(255,255,255,0.4); font-size: 0.82rem; padding-top: 0.5rem;'>"
-            f"Analisando {len(TICKERS_COM_OPCOES)} ativos · "
+            f"Dados: opcoes.net.br · "
             f"Vol ≥ R${params['vol_min']:,.0f} · "
             f"IVP ≤ {params['iv_percentile_max']:.0f}% · "
             f"IVR ≤ {params['iv_rank_max']:.0f}% · "
@@ -659,17 +659,15 @@ def main():
             progress_bar = st.progress(0)
             status_text = st.empty()
 
-            def on_progress(i, total, ticker):
-                progress_bar.progress((i + 1) / total)
-                nome = NOMES_ATIVOS.get(ticker, ticker)
+            def on_progress(i, total, msg):
+                progress_bar.progress(min((i + 1) / max(total, 1), 1.0))
                 status_text.markdown(
                     f"<p style='color: rgba(255,255,255,0.5); font-size: 0.8rem;'>"
-                    f"Analisando {ticker} ({nome}) — {i+1}/{total}</p>",
+                    f"{msg}</p>",
                     unsafe_allow_html=True
                 )
 
             df_resultados = executar_screener(
-                tickers=TICKERS_COM_OPCOES,
                 vol_min_opcoes=params["vol_min"],
                 iv_percentile_max=params["iv_percentile_max"],
                 iv_rank_max=params["iv_rank_max"],
@@ -709,16 +707,25 @@ def main():
         """, unsafe_allow_html=True)
 
         # Preparar tabela de exibição
-        df_display = df_resultados[[
-            "ticker", "nome", "preco", "vol_hist", "iv_calls", "iv_puts",
-            "iv_percentile", "iv_rank", "diff_vol", "vol_opcoes"
-        ]].copy()
+        display_cols = ["ticker", "preco"]
+        rename_map = {"ticker": "Ticker", "preco": "Preço (R$)"}
 
-        df_display.columns = [
-            "Ticker", "Ativo", "Preço (R$)", "Vol. Hist. (%)", "IV Calls (%)",
-            "IV Puts (%)", "IV Percentile (%)", "IV Rank (%)", "Diff Vol",
-            "Vol. Opções (R$)"
-        ]
+        optional_cols = {
+            "vol_hist": "Vol. Hist. EWMA (%)",
+            "iv_calls": "IV Calls (%)",
+            "iv_puts": "IV Puts (%)",
+            "iv_percentile": "IV Percentile (%)",
+            "iv_rank": "IV Rank (%)",
+            "diff_vol": "Diff Vol",
+            "vol_opcoes": "Vol. Financeiro (R$)",
+        }
+        for col, label in optional_cols.items():
+            if col in df_resultados.columns:
+                display_cols.append(col)
+                rename_map[col] = label
+
+        df_display = df_resultados[display_cols].copy()
+        df_display = df_display.rename(columns=rename_map)
 
         st.dataframe(
             df_display,
@@ -750,7 +757,7 @@ def main():
 
         tickers_disponiveis = df_resultados["ticker"].tolist()
         ticker_labels = [
-            f"{t} — {NOMES_ATIVOS.get(t, t)} (R${df_resultados[df_resultados['ticker']==t]['preco'].values[0]:.2f})"
+            f"{t} (R${df_resultados[df_resultados['ticker']==t]['preco'].values[0]:.2f})"
             for t in tickers_disponiveis
         ]
 
