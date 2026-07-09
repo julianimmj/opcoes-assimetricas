@@ -13,9 +13,9 @@ from tickers_opcoes import TICKERS_COM_OPCOES, NOMES_ATIVOS
 
 def executar_screener(
     vol_min_opcoes: float = 500_000.0,
-    iv_percentile_max: float = 35.0,
-    iv_rank_max: float = 30.0,
-    diff_vol_max: float = 3.0,
+    iv_percentile_max: float = 50.0,
+    iv_rank_max: float = 50.0,
+    diff_vol_max: float = 15.0,
     progress_callback=None,
 ) -> pd.DataFrame:
     """

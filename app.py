@@ -577,19 +577,19 @@ def render_sidebar():
         st.markdown("### 📉 Filtro de Volatilidade")
         iv_percentile_max = st.slider(
             "IV Percentile máximo (%)",
-            min_value=5.0, max_value=100.0, value=35.0, step=1.0,
+            min_value=5.0, max_value=100.0, value=50.0, step=1.0,
             help="Percentil máximo da volatilidade implícita (quanto menor, mais barata)"
         )
 
         iv_rank_max = st.slider(
             "IV Rank máximo (%)",
-            min_value=5.0, max_value=100.0, value=30.0, step=1.0,
+            min_value=5.0, max_value=100.0, value=50.0, step=1.0,
             help="IV Rank máximo (quanto menor, mais barata)"
         )
 
         diff_vol_max = st.slider(
             "Diff Vol máximo (pontos)",
-            min_value=0.5, max_value=15.0, value=3.0, step=0.5,
+            min_value=0.5, max_value=30.0, value=15.0, step=0.5,
             help="Diferença máxima de vol entre calls e puts"
         )
 
