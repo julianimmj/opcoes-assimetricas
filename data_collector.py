@@ -5,6 +5,7 @@ Meticulosamente projetado para contornar bloqueios de robôs da página /acoes.
 """
 
 import requests
+import time
 import pandas as pd
 from datetime import datetime, timedelta
 import streamlit as st
@@ -90,75 +91,110 @@ def calcular_vol_e_proxy_iv(closes: pd.Series) -> dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def buscar_opcoes_unico_ativo(ticker: str, preco_ativo: float, dias_min: int, dias_max: int) -> pd.DataFrame:
-    """Busca as opções de um ativo individual. Executado em threads paralela."""
-    url = f"https://opcoes.net.br/listaopcoes/completa?idAcao={ticker.upper()}&listarVencimentos=true&cotacoes=true"
+    """
+    Busca as opções de um ativo individual via API /api/v1 do opcoes.net.br.
+    Retorna um DataFrame estruturado com as opções.
+    """
+    base_url = "https://opcoes.net.br/api/v1"
     dados = []
     hoje = datetime.now()
+    z = int(time.time() / 10)
+    
+    params = {
+        "z": z,
+        "r0t": "LastQuotesInfo",
+        "r1t": "OptionsChain",
+        "r1p.underlying_asset_id": ticker.upper(),
+        "r1p.skip": "0",
+        "r1p.load": "10000",
+    }
     
     try:
-        response = requests.get(url, headers=HEADERS, timeout=12)
+        response = requests.get(base_url, params=params, headers=HEADERS, timeout=12)
         if response.status_code != 200:
             return pd.DataFrame()
             
         data = response.json()
-        if 'data' not in data or 'cotacoesOpcoes' not in data['data']:
+        reqs = data.get('requests', [])
+        if len(reqs) < 2 or 'results' not in reqs[1]:
             return pd.DataFrame()
             
-        opcoes_raw = data['data']['cotacoesOpcoes']
+        results = reqs[1]['results']
+        expirations = results.get('expirations', [])
         
-        for opcao in opcoes_raw:
+        for exp in expirations:
+            venc_str = exp.get('dt')  # formato: '2026-07-17'
+            if not venc_str:
+                continue
+                
             try:
-                if isinstance(opcao, list) and len(opcao) >= 12:
-                    ticker_opcao = str(opcao[0]).split('_')[0] if opcao[0] else ""
-                    strike = float(opcao[5]) if opcao[5] else 0.0
-                    preco_opcao = float(opcao[7]) if opcao[7] else 0.0
-                    negocios = int(opcao[9]) if opcao[9] else 0
-                    volume = float(opcao[10]) if opcao[10] else 0.0
-                    vencimento_str = str(opcao[11]) if len(opcao) > 11 and opcao[11] else ""
-                    
-                    tipo = str(opcao[2]).lower() if opcao[2] else None
-                            
-                    if tipo is None:
-                        tipo_raw = str(opcao[1]).strip().upper() if opcao[1] else ""
-                        if "CALL" in tipo_raw or tipo_raw == "C":
-                            tipo = "call"
-                        elif "PUT" in tipo_raw or tipo_raw == "P":
-                            tipo = "put"
-                        else:
-                            continue
-                            
-                    dias_venc = 30
-                    if vencimento_str:
-                        try:
-                            venc_str_clean = vencimento_str.split("T")[0] if "T" in vencimento_str else vencimento_str
-                            venc_date = datetime.strptime(venc_str_clean, "%Y-%m-%d")
-                            dias_venc = max((venc_date - hoje).days, 1)
-                        except ValueError:
-                            try:
-                                venc_date = datetime.strptime(vencimento_str[:10], "%d/%m/%Y")
-                                dias_venc = max((venc_date - hoje).days, 1)
-                            except Exception:
-                                pass
-                                
-                    if not (dias_min <= dias_venc <= dias_max):
+                venc_date = datetime.strptime(venc_str, "%Y-%m-%d")
+                dias_venc = (venc_date - hoje).days
+            except Exception:
+                continue
+                
+            if not (dias_min <= dias_venc <= dias_max):
+                continue
+                
+            # Processar CALLs
+            for o in exp.get('calls', []):
+                try:
+                    if not isinstance(o, list) or len(o) < 7:
                         continue
-                        
+                    
+                    suffix = str(o[0])
+                    ticker_opcao = f"{ticker[:4].upper()}{suffix}"
+                    strike = float(o[3]) if o[3] is not None else 0.0
+                    preco_opcao = float(o[6]) if o[6] is not None else 0.0
+                    negocios = int(o[9]) if len(o) > 9 and o[9] is not None else 0
+                    volume = float(o[10]) if len(o) > 10 and o[10] is not None else 0.0
+                    
                     if preco_opcao <= 0 or strike <= 0:
                         continue
                         
                     dados.append({
                         "ticker_opcao": ticker_opcao,
-                        "tipo": tipo,
+                        "tipo": "call",
                         "strike": strike,
                         "preco": preco_opcao,
                         "volume": volume,
                         "negocios": negocios,
-                        "vencimento": vencimento_str,
+                        "vencimento": venc_str,
                         "dias_venc": dias_venc,
                         "preco_ativo": preco_ativo,
                     })
-            except Exception:
-                continue
+                except Exception:
+                    continue
+                    
+            # Processar PUTs
+            for o in exp.get('puts', []):
+                try:
+                    if not isinstance(o, list) or len(o) < 7:
+                        continue
+                        
+                    suffix = str(o[0])
+                    ticker_opcao = f"{ticker[:4].upper()}{suffix}"
+                    strike = float(o[3]) if o[3] is not None else 0.0
+                    preco_opcao = float(o[6]) if o[6] is not None else 0.0
+                    negocios = int(o[9]) if len(o) > 9 and o[9] is not None else 0
+                    volume = float(o[10]) if len(o) > 10 and o[10] is not None else 0.0
+                    
+                    if preco_opcao <= 0 or strike <= 0:
+                        continue
+                        
+                    dados.append({
+                        "ticker_opcao": ticker_opcao,
+                        "tipo": "put",
+                        "strike": strike,
+                        "preco": preco_opcao,
+                        "volume": volume,
+                        "negocios": negocios,
+                        "vencimento": venc_str,
+                        "dias_venc": dias_venc,
+                        "preco_ativo": preco_ativo,
+                    })
+                except Exception:
+                    continue
     except Exception:
         pass
         
