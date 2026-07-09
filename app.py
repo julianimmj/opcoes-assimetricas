@@ -480,8 +480,21 @@ def render_recommendation(resultado):
     aposta = resultado["aposta"]
     protecao = resultado["protecao"]
 
-    venc_aposta_dt = datetime.strptime(aposta['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y") if aposta.get('vencimento') else ""
-    venc_prot_dt = datetime.strptime(protecao['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y") if protecao.get('vencimento') else ""
+    from datetime import timedelta
+    
+    # Fallback robusto caso haja atraso no reload de cache/modulo no servidor
+    if not aposta.get('vencimento'):
+        venc_aposta_dt = (datetime.now() + timedelta(days=aposta.get('dias_venc', 8))).strftime("%d/%m/%Y")
+    else:
+        venc_aposta_dt = datetime.strptime(aposta['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y")
+
+    if not protecao.get('vencimento'):
+        venc_prot_dt = (datetime.now() + timedelta(days=protecao.get('dias_venc', 8))).strftime("%d/%m/%Y")
+    else:
+        venc_prot_dt = datetime.strptime(protecao['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y")
+
+    dias_uteis_aposta = aposta.get('dias_uteis', int(aposta.get('dias_venc', 8) * 5 / 7))
+    dias_uteis_prot = protecao.get('dias_uteis', int(protecao.get('dias_venc', 8) * 5 / 7))
 
     html_content = f"""<div class="reco-card">
 <div class="reco-title">
@@ -503,7 +516,7 @@ def render_recommendation(resultado):
 <span>opções</span>
 <span class="reco-ticker">{aposta['ticker_opcao']}</span>
 <span class="reco-detail">
-{aposta['label']} · Δ {aposta['delta']:.2f} · R$ {aposta['preco']:.2f} · Strike {aposta['strike']:.2f} · Vencimento: {venc_aposta_dt} ({aposta['dias_uteis']} d.ú.)
+{aposta['label']} · Δ {aposta['delta']:.2f} · R$ {aposta['preco']:.2f} · Strike {aposta['strike']:.2f} · Vencimento: {venc_aposta_dt} ({dias_uteis_aposta} d.ú.)
 </span>
 </div>
 <div class="reco-line">
@@ -512,7 +525,7 @@ def render_recommendation(resultado):
 <span>opções</span>
 <span class="reco-ticker">{protecao['ticker_opcao']}</span>
 <span class="reco-detail">
-{protecao['label']} · Δ {protecao['delta']:.2f} · R$ {protecao['preco']:.2f} · Strike {protecao['strike']:.2f} · Vencimento: {venc_prot_dt} ({protecao['dias_uteis']} d.ú.)
+{protecao['label']} · Δ {protecao['delta']:.2f} · R$ {protecao['preco']:.2f} · Strike {protecao['strike']:.2f} · Vencimento: {venc_prot_dt} ({dias_uteis_prot} d.ú.)
 </span>
 </div>
 <div class="reco-cost">
