@@ -301,6 +301,55 @@ st.markdown("""
         color: #00d2ff;
     }
 
+    /* ─── Custom Segmented Radio Buttons ─── */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
+        margin-top: 0.5rem !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+        flex: 1 !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 10px !important;
+        padding: 0.6rem 1rem !important;
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        transition: all 0.25s ease !important;
+        margin: 0 !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:hover {
+        background: rgba(0, 210, 255, 0.05) !important;
+        border-color: rgba(0, 210, 255, 0.25) !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) {
+        background: rgba(0, 210, 255, 0.12) !important;
+        border-color: #00d2ff !important;
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.15) !important;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] > label:has(input:checked) p {
+        color: #fff !important;
+        font-weight: 600 !important;
+    }
+    /* Hide default radio elements */
+    div[data-testid="stRadio"] div[data-testid="stRadioCircle"] {
+        display: none !important;
+    }
+    div[data-testid="stRadio"] div[class*="stRadioCircle"] {
+        display: none !important;
+    }
+    div[data-testid="stRadio"] div[class*="RadioCircle"] {
+        display: none !important;
+    }
+    div[data-testid="stRadio"] span[class*="Radio"] {
+        display: none !important;
+    }
+
     /* ─── Viés Buttons ─── */
     .vies-alta {
         background: linear-gradient(135deg, rgba(0,180,80,0.15) 0%, rgba(0,255,163,0.08) 100%);
@@ -855,7 +904,8 @@ def main():
                 "Viés Direcional",
                 options=["🟢 Acredito na ALTA", "🔴 Acredito na QUEDA"],
                 index=0,
-                help="Sua expectativa de direção para o ativo"
+                help="Sua expectativa de direção para o ativo",
+                horizontal=True
             )
             vies_code = "ALTA" if "ALTA" in vies else "QUEDA"
 
@@ -864,7 +914,8 @@ def main():
                 "Nível de Proteção",
                 options=["🛡️ Clássica (Mais Barata)", "🏰 Total (Garante o Capital)"],
                 index=0,
-                help="Clássica: proporção fixa 2:1 | Total: cobertura dinâmica de 100%"
+                help="Clássica: proporção fixa 2:1 | Total: cobertura dinâmica de 100%",
+                horizontal=True
             )
             protecao_code = "CLASSICA" if "Clássica" in protecao else "TOTAL"
 
