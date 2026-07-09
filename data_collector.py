@@ -130,6 +130,7 @@ def buscar_opcoes_unico_ativo(ticker: str, preco_ativo: float, dias_min: int, di
             try:
                 venc_date = datetime.strptime(venc_str, "%Y-%m-%d")
                 dias_venc = (venc_date - hoje).days
+                dias_uteis = int(exp.get('du')) if exp.get('du') is not None else int(dias_venc * 5 / 7)
             except Exception:
                 continue
                 
@@ -161,6 +162,7 @@ def buscar_opcoes_unico_ativo(ticker: str, preco_ativo: float, dias_min: int, di
                         "negocios": negocios,
                         "vencimento": venc_str,
                         "dias_venc": dias_venc,
+                        "dias_uteis": dias_uteis,
                         "preco_ativo": preco_ativo,
                     })
                 except Exception:
@@ -191,6 +193,7 @@ def buscar_opcoes_unico_ativo(ticker: str, preco_ativo: float, dias_min: int, di
                         "negocios": negocios,
                         "vencimento": venc_str,
                         "dias_venc": dias_venc,
+                        "dias_uteis": dias_uteis,
                         "preco_ativo": preco_ativo,
                     })
                 except Exception:

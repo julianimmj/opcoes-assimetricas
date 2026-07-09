@@ -246,6 +246,61 @@ st.markdown("""
         border: 1px solid rgba(0,255,163,0.3);
     }
 
+    /* ─── Recommendation top boxes ─── */
+    .reco-top-badges {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.2rem;
+        justify-content: flex-start;
+    }
+    .badge-box {
+        flex: 1;
+        max-width: 220px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .badge-box-label {
+        font-size: 0.72rem;
+        color: rgba(255, 255, 255, 0.4);
+        text-transform: uppercase;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.2rem;
+    }
+    .badge-box-value {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+    }
+    .badge-box-vies-alta {
+        border-color: rgba(0, 255, 163, 0.25);
+        background: rgba(0, 255, 163, 0.04);
+    }
+    .badge-box-vies-alta .badge-box-value {
+        color: #00ffa3;
+    }
+    .badge-box-vies-queda {
+        border-color: rgba(255, 80, 80, 0.25);
+        background: rgba(255, 80, 80, 0.04);
+    }
+    .badge-box-vies-queda .badge-box-value {
+        color: #ff5050;
+    }
+    .badge-box-protecao {
+        border-color: rgba(0, 210, 255, 0.25);
+        background: rgba(0, 210, 255, 0.04);
+    }
+    .badge-box-protecao .badge-box-value {
+        color: #00d2ff;
+    }
+
     /* ─── Viés Buttons ─── */
     .vies-alta {
         background: linear-gradient(135deg, rgba(0,180,80,0.15) 0%, rgba(0,255,163,0.08) 100%);
@@ -425,9 +480,22 @@ def render_recommendation(resultado):
     aposta = resultado["aposta"]
     protecao = resultado["protecao"]
 
+    venc_aposta_dt = datetime.strptime(aposta['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y") if aposta.get('vencimento') else ""
+    venc_prot_dt = datetime.strptime(protecao['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y") if protecao.get('vencimento') else ""
+
     html_content = f"""<div class="reco-card">
 <div class="reco-title">
-{vies_emoji} Para operar {resultado['ticker']} com viés de {vies_label} — {resultado['estrategia']}
+🛡️ Estrutura Recomendada para {resultado['ticker']} — {resultado['estrategia']}
+</div>
+<div class="reco-top-badges">
+<div class="badge-box badge-box-vies-{resultado['vies'].lower()}">
+<div class="badge-box-label">Viés Direcional</div>
+<div class="badge-box-value">{vies_emoji} {vies_label}</div>
+</div>
+<div class="badge-box badge-box-protecao">
+<div class="badge-box-label">Nível de Proteção</div>
+<div class="badge-box-value">{protecao_label}</div>
+</div>
 </div>
 <div class="reco-line">
 <span class="reco-action">COMPRE</span>
@@ -435,7 +503,7 @@ def render_recommendation(resultado):
 <span>opções</span>
 <span class="reco-ticker">{aposta['ticker_opcao']}</span>
 <span class="reco-detail">
-{aposta['label']} · Δ {aposta['delta']:.2f} · R$ {aposta['preco']:.2f} · Strike {aposta['strike']:.2f}
+{aposta['label']} · Δ {aposta['delta']:.2f} · R$ {aposta['preco']:.2f} · Strike {aposta['strike']:.2f} · Vencimento: {venc_aposta_dt} ({aposta['dias_uteis']} d.ú.)
 </span>
 </div>
 <div class="reco-line">
@@ -444,7 +512,7 @@ def render_recommendation(resultado):
 <span>opções</span>
 <span class="reco-ticker">{protecao['ticker_opcao']}</span>
 <span class="reco-detail">
-{protecao['label']} · Δ {protecao['delta']:.2f} · R$ {protecao['preco']:.2f} · Strike {protecao['strike']:.2f}
+{protecao['label']} · Δ {protecao['delta']:.2f} · R$ {protecao['preco']:.2f} · Strike {protecao['strike']:.2f} · Vencimento: {venc_prot_dt} ({protecao['dias_uteis']} d.ú.)
 </span>
 </div>
 <div class="reco-cost">
@@ -465,7 +533,7 @@ def render_recommendation(resultado):
 <div class="reco-cost-label">Cobertura Estimada</div>
 </div>
 <div class="reco-cost-item">
-<span class="badge-protecao {protecao_badge}">{protecao_label} ({resultado['proporcao']})</span>
+<span class="badge-protecao {protecao_badge}">Proporção: {resultado['proporcao']}</span>
 </div>
 </div>
 </div>"""

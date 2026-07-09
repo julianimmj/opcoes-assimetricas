@@ -77,6 +77,8 @@ def selecionar_opcao_por_delta(
         "delta": melhor["delta"],
         "iv": melhor["iv"],
         "dias_venc": melhor["dias_venc"],
+        "dias_uteis": melhor["dias_uteis"] if "dias_uteis" in melhor else int(melhor["dias_venc"] * 5 / 7),
+        "vencimento": melhor["vencimento"] if "vencimento" in melhor else "",
         "volume": melhor["volume"],
     }
 
