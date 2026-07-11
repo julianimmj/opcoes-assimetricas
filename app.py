@@ -458,7 +458,7 @@ st.markdown("""
 
     /* ─── Sizing & Equal Heights for Selector Containers ─── */
     div[data-testid="stVerticalBlockBorderWrapper"] {
-        min-height: 145px !important;
+        height: 155px !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -471,6 +471,7 @@ st.markdown("""
     @media (max-width: 768px) {
         /* Let selection containers stack and size dynamically on mobile */
         div[data-testid="stVerticalBlockBorderWrapper"] {
+            height: auto !important;
             min-height: auto !important;
             margin-bottom: 0.8rem !important;
             padding: 0.8rem !important;
@@ -969,7 +970,7 @@ def main():
             for t in tickers_disponiveis
         ]
 
-        col_sel, col_vies, col_prot = st.columns([2, 1, 1])
+        col_sel, col_vies, col_prot = st.columns([1.4, 1.3, 1.3])
 
         with col_sel:
             selected_label = st.selectbox(
