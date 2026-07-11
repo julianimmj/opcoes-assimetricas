@@ -27,34 +27,82 @@ HEADERS = {
 #  CÁLCULO EM LOTE DE VOLATILIDADE HISTÓRICA & PROXY DE IV (yfinance)
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _reset_yfinance_session():
+    """Limpa sessão/crumb do yfinance para forçar reautenticação."""
+    try:
+        # Limpar cache de crumb do yfinance
+        import yfinance.data as _yfdata
+        if hasattr(_yfdata, '_crumb') and hasattr(_yfdata, '_cookie'):
+            _yfdata._crumb = None
+            _yfdata._cookie = None
+    except Exception:
+        pass
+    try:
+        # Alternativa: limpar via atributos internos do módulo
+        if hasattr(yf, 'shared') and hasattr(yf.shared, '_CACHE'):
+            yf.shared._CACHE = {}
+    except Exception:
+        pass
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def obter_dados_historicos_lote(tickers: list[str]) -> dict:
     """
     Busca dados históricos em lote para todos os tickers de uma vez.
-    Isso economiza dezenas de conexões HTTP lentas e reduz o tempo de 15s para 1.5s.
+    Inclui retry com reset de sessão para contornar erros de crumb do Yahoo.
     """
     tickers_sa = [f"{t}.SA" for t in tickers]
-    try:
-        # Baixar dados dos últimos 252 dias úteis (~370 dias corridos) para IV Percentile
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=370)
-        
-        df = yf.download(tickers_sa, start=start_date, end=end_date, progress=False)
-        
-        if df.empty or "Close" not in df.columns:
-            return {}
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=370)
+    
+    for tentativa in range(3):
+        try:
+            df = yf.download(
+                tickers_sa, start=start_date, end=end_date,
+                progress=False, timeout=15
+            )
             
-        dados_ativos = {}
-        for t in tickers:
-            col_name = f"{t}.SA"
-            if col_name in df["Close"].columns:
-                closes = df["Close"][col_name].dropna()
-                if len(closes) >= 60:
-                    dados_ativos[t] = closes
-        return dados_ativos
-    except Exception as e:
-        st.warning(f"⚠️ Erro ao baixar dados históricos em lote: {e}")
-        return {}
+            if df.empty:
+                _reset_yfinance_session()
+                time.sleep(1)
+                continue
+                
+            # Verificar se tem coluna Close (pode ser MultiIndex ou não)
+            if isinstance(df.columns, pd.MultiIndex):
+                if "Close" not in df.columns.get_level_values(0):
+                    return {}
+            elif "Close" not in df.columns:
+                return {}
+                
+            dados_ativos = {}
+            for t in tickers:
+                col_name = f"{t}.SA"
+                try:
+                    if isinstance(df.columns, pd.MultiIndex):
+                        if col_name in df["Close"].columns:
+                            closes = df["Close"][col_name].dropna()
+                        else:
+                            continue
+                    else:
+                        closes = df["Close"].dropna()
+                    if len(closes) >= 60:
+                        dados_ativos[t] = closes
+                except Exception:
+                    continue
+            return dados_ativos
+            
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "crumb" in err_msg or "401" in err_msg or "unauthorized" in err_msg:
+                _reset_yfinance_session()
+                time.sleep(2 * (tentativa + 1))
+                continue
+            else:
+                st.warning(f"⚠️ Erro ao baixar dados históricos em lote: {e}")
+                return {}
+    
+    st.warning("⚠️ Yahoo Finance temporariamente indisponível. Tentando novamente em breve...")
+    return {}
 
 
 def calcular_vol_e_proxy_iv(closes: pd.Series) -> dict:
@@ -204,20 +252,62 @@ def buscar_opcoes_unico_ativo(ticker: str, preco_ativo: float, dias_min: int, di
     return pd.DataFrame(dados)
 
 
+def _obter_preco_ativo_opcoes_net(ticker: str) -> float | None:
+    """Obtém preço do ativo via API do opcoes.net.br (LastQuotesInfo)."""
+    try:
+        z = int(time.time() / 10)
+        params = {
+            "z": z,
+            "r0t": "LastQuotesInfo",
+            "r1t": "OptionsChain",
+            "r1p.underlying_asset_id": ticker.upper(),
+            "r1p.skip": "0",
+            "r1p.load": "1",
+        }
+        response = requests.get("https://opcoes.net.br/api/v1", params=params, headers=HEADERS, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            reqs = data.get('requests', [])
+            if len(reqs) >= 1 and 'results' in reqs[0]:
+                info = reqs[0]['results']
+                preco = info.get('last_price') or info.get('close') or info.get('price')
+                if preco and float(preco) > 0:
+                    return float(preco)
+    except Exception:
+        pass
+    return None
+
+
+def _obter_preco_ativo_yfinance(ticker: str) -> float | None:
+    """Obtém preço do ativo via yfinance com retry e reset de crumb."""
+    for tentativa in range(2):
+        try:
+            stock = yf.Ticker(f"{ticker.upper()}.SA")
+            hist = stock.history(period="1d")
+            if not hist.empty:
+                return float(hist["Close"].iloc[-1])
+            _reset_yfinance_session()
+        except Exception as e:
+            err_msg = str(e).lower()
+            if "crumb" in err_msg or "401" in err_msg or "unauthorized" in err_msg:
+                _reset_yfinance_session()
+                time.sleep(1)
+            else:
+                break
+    return None
+
+
 @st.cache_data(ttl=600, show_spinner=False)
 def buscar_opcoes_ativo(ticker: str, dias_min: int = 20, dias_max: int = 90) -> pd.DataFrame:
     """
     Busca e calcula gregas/IV para opções de um único ativo.
-    Usado no seletor de montagem de estratégias da interface.
+    Usa opcoes.net.br como fonte primária de preço, yfinance como fallback.
     """
-    # Obter preço atual do ativo
-    try:
-        stock = yf.Ticker(f"{ticker.upper()}.SA")
-        hist = stock.history(period="1d")
-        if hist.empty:
-            return pd.DataFrame()
-        preco_ativo = float(hist["Close"].iloc[-1])
-    except Exception:
+    # Obter preço atual do ativo (opcoes.net.br primeiro, yfinance como fallback)
+    preco_ativo = _obter_preco_ativo_opcoes_net(ticker)
+    if preco_ativo is None:
+        preco_ativo = _obter_preco_ativo_yfinance(ticker)
+    if preco_ativo is None:
         return pd.DataFrame()
         
     df_opcoes = buscar_opcoes_unico_ativo(ticker, preco_ativo, dias_min, dias_max)

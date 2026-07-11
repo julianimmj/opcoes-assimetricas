@@ -900,24 +900,26 @@ def main():
         selected_ticker = tickers_disponiveis[ticker_labels.index(selected_label)] if selected_label else None
 
         with col_vies:
-            vies = st.radio(
-                "Viés Direcional",
-                options=["🟢 Acredito na ALTA", "🔴 Acredito na QUEDA"],
-                index=0,
-                help="Sua expectativa de direção para o ativo",
-                horizontal=True
-            )
-            vies_code = "ALTA" if "ALTA" in vies else "QUEDA"
+            with st.container(border=True):
+                vies = st.radio(
+                    "Viés Direcional",
+                    options=["🟢 Acredito na ALTA", "🔴 Acredito na QUEDA"],
+                    index=0,
+                    help="Sua expectativa de direção para o ativo",
+                    horizontal=True
+                )
+                vies_code = "ALTA" if "ALTA" in vies else "QUEDA"
 
         with col_prot:
-            protecao = st.radio(
-                "Nível de Proteção",
-                options=["🛡️ Clássica (Mais Barata)", "🏰 Total (Garante o Capital)"],
-                index=0,
-                help="Clássica: proporção fixa 2:1 | Total: cobertura dinâmica de 100%",
-                horizontal=True
-            )
-            protecao_code = "CLASSICA" if "Clássica" in protecao else "TOTAL"
+            with st.container(border=True):
+                protecao = st.radio(
+                    "Nível de Proteção",
+                    options=["🛡️ Clássica (Mais Barata)", "🏰 Total (Garante o Capital)"],
+                    index=0,
+                    help="Clássica: proporção fixa 2:1 | Total: cobertura dinâmica de 100%",
+                    horizontal=True
+                )
+                protecao_code = "CLASSICA" if "Clássica" in protecao else "TOTAL"
 
         # ─── Montar Estratégia ────────────────────────────────────────
         if selected_ticker:
