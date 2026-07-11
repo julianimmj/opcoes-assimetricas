@@ -609,23 +609,23 @@ def render_recommendation(resultado):
     protecao_badge = "badge-classica" if resultado["tipo_protecao"] == "CLASSICA" else "badge-total"
     protecao_label = "Proteção Clássica" if resultado["tipo_protecao"] == "CLASSICA" else "Proteção Total"
 
-    aposta = resultado["aposta"]
+    especulacao = resultado["especulacao"]
     protecao = resultado["protecao"]
 
     from datetime import timedelta
     
     # Fallback robusto caso haja atraso no reload de cache/modulo no servidor
-    if not aposta.get('vencimento'):
-        venc_aposta_dt = (datetime.now() + timedelta(days=aposta.get('dias_venc', 8))).strftime("%d/%m/%Y")
+    if not especulacao.get('vencimento'):
+        venc_especulacao_dt = (datetime.now() + timedelta(days=especulacao.get('dias_venc', 8))).strftime("%d/%m/%Y")
     else:
-        venc_aposta_dt = datetime.strptime(aposta['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y")
+        venc_especulacao_dt = datetime.strptime(especulacao['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y")
 
     if not protecao.get('vencimento'):
         venc_prot_dt = (datetime.now() + timedelta(days=protecao.get('dias_venc', 8))).strftime("%d/%m/%Y")
     else:
         venc_prot_dt = datetime.strptime(protecao['vencimento'], "%Y-%m-%d").strftime("%d/%m/%Y")
 
-    dias_uteis_aposta = aposta.get('dias_uteis', int(aposta.get('dias_venc', 8) * 5 / 7))
+    dias_uteis_especulacao = especulacao.get('dias_uteis', int(especulacao.get('dias_venc', 8) * 5 / 7))
     dias_uteis_prot = protecao.get('dias_uteis', int(protecao.get('dias_venc', 8) * 5 / 7))
 
     html_content = f"""<div class="reco-card">
@@ -644,11 +644,11 @@ def render_recommendation(resultado):
 </div>
 <div class="reco-line">
 <span class="reco-action">COMPRE</span>
-<span class="reco-qty">{aposta['qtd']}</span>
+<span class="reco-qty">{especulacao['qtd']}</span>
 <span>opções</span>
-<span class="reco-ticker">{aposta['ticker_opcao']}</span>
+<span class="reco-ticker">{especulacao['ticker_opcao']}</span>
 <span class="reco-detail">
-{aposta['label']} · Δ {aposta['delta']:.2f} · R$ {aposta['preco']:.2f} · Strike {aposta['strike']:.2f} · Vencimento: {venc_aposta_dt} ({dias_uteis_aposta} d.ú.)
+{especulacao['label']} · Δ {especulacao['delta']:.2f} · R$ {especulacao['preco']:.2f} · Strike {especulacao['strike']:.2f} · Vencimento: {venc_especulacao_dt} ({dias_uteis_especulacao} d.ú.)
 </span>
 </div>
 <div class="reco-line">
@@ -666,8 +666,8 @@ def render_recommendation(resultado):
 <div class="reco-cost-label">Custo Total</div>
 </div>
 <div class="reco-cost-item">
-<div class="reco-cost-value">R$ {aposta['custo']:,.2f}</div>
-<div class="reco-cost-label">Custo Aposta</div>
+<div class="reco-cost-value">R$ {especulacao['custo']:,.2f}</div>
+<div class="reco-cost-label">Custo Especulação</div>
 </div>
 <div class="reco-cost-item">
 <div class="reco-cost-value">R$ {protecao['custo']:,.2f}</div>
@@ -692,7 +692,7 @@ def render_payoff_chart(resultado):
         return
 
     preco_ativo = resultado["preco_ativo"]
-    aposta = resultado["aposta"]
+    especulacao = resultado["especulacao"]
     protecao_op = resultado["protecao"]
 
     # Range de preços para simulação
@@ -706,11 +706,11 @@ def render_payoff_chart(resultado):
         spot = precos[p]
         pnl = 0
 
-        # Aposta
-        if aposta["tipo"] == "call":
-            pnl += aposta["qtd"] * (max(spot - aposta["strike"], 0) - aposta["preco"])
+        # Especulação
+        if especulacao["tipo"] == "call":
+            pnl += especulacao["qtd"] * (max(spot - especulacao["strike"], 0) - especulacao["preco"])
         else:
-            pnl += aposta["qtd"] * (max(aposta["strike"] - spot, 0) - aposta["preco"])
+            pnl += especulacao["qtd"] * (max(especulacao["strike"] - spot, 0) - especulacao["preco"])
 
         # Proteção
         if protecao_op["tipo"] == "call":
@@ -740,8 +740,8 @@ def render_payoff_chart(resultado):
                   annotation_text=f"Spot: R${preco_ativo:.2f}", annotation_font_color="#00ffa3")
 
     # Strikes
-    fig.add_vline(x=aposta["strike"], line_dash="dot", line_color="rgba(0,210,255,0.4)",
-                  annotation_text=f"Strike Aposta: {aposta['strike']:.2f}",
+    fig.add_vline(x=especulacao["strike"], line_dash="dot", line_color="rgba(0,210,255,0.4)",
+                  annotation_text=f"Strike Especulação: {especulacao['strike']:.2f}",
                   annotation_font_color="rgba(0,210,255,0.6)")
     fig.add_vline(x=protecao_op["strike"], line_dash="dot", line_color="rgba(255,165,0,0.4)",
                   annotation_text=f"Strike Proteção: {protecao_op['strike']:.2f}",
@@ -808,9 +808,9 @@ def render_sidebar():
 
         st.markdown("### 🎯 Estratégia")
         qtd_base = st.number_input(
-            "Quantidade base (opções de aposta)",
+            "Quantidade base (opções de especulação)",
             min_value=100, max_value=10000, value=200, step=100,
-            help="Quantidade base de opções para a perna de aposta"
+            help="Quantidade base de opções para a perna de especulação"
         )
 
         st.markdown("---")
@@ -1031,18 +1031,25 @@ def main():
                 with st.expander("📊 Detalhes da Estrutura"):
                     det1, det2 = st.columns(2)
 
+                    venc_esp_raw = resultado["especulacao"].get("vencimento", "")
+                    venc_esp_formatted = datetime.strptime(venc_esp_raw, "%Y-%m-%d").strftime("%d/%m/%Y") if venc_esp_raw else ""
+
+                    venc_prot_raw = resultado["protecao"].get("vencimento", "")
+                    venc_prot_formatted = datetime.strptime(venc_prot_raw, "%Y-%m-%d").strftime("%d/%m/%Y") if venc_prot_raw else ""
+
                     with det1:
-                        st.markdown("**Perna de Aposta**")
+                        st.markdown("**Perna de Especulação**")
                         st.json({
-                            "Ticker": resultado["aposta"]["ticker_opcao"],
-                            "Tipo": resultado["aposta"]["label"],
-                            "Strike": resultado["aposta"]["strike"],
-                            "Preço": resultado["aposta"]["preco"],
-                            "Delta": resultado["aposta"]["delta"],
-                            "IV (%)": resultado["aposta"]["iv"],
-                            "Quantidade": resultado["aposta"]["qtd"],
-                            "Custo Total": resultado["aposta"]["custo"],
-                            "Dias Venc.": resultado["aposta"]["dias_venc"],
+                            "Ticker": resultado["especulacao"]["ticker_opcao"],
+                            "Tipo": resultado["especulacao"]["label"],
+                            "Strike": resultado["especulacao"]["strike"],
+                            "Preço": resultado["especulacao"]["preco"],
+                            "Delta": resultado["especulacao"]["delta"],
+                            "IV (%)": resultado["especulacao"]["iv"],
+                            "Quantidade": resultado["especulacao"]["qtd"],
+                            "Custo Total": resultado["especulacao"]["custo"],
+                            "Vencimento": venc_esp_formatted,
+                            "Dias Venc.": resultado["especulacao"]["dias_venc"],
                         })
 
                     with det2:
@@ -1056,6 +1063,7 @@ def main():
                             "IV (%)": resultado["protecao"]["iv"],
                             "Quantidade": resultado["protecao"]["qtd"],
                             "Custo Total": resultado["protecao"]["custo"],
+                            "Vencimento": venc_prot_formatted,
                             "Dias Venc.": resultado["protecao"]["dias_venc"],
                         })
 
