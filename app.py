@@ -455,6 +455,88 @@ st.markdown("""
     .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
     .empty-state .empty-title { font-size: 1.2rem; font-weight: 600; color: rgba(255,255,255,0.6); }
     .empty-state .empty-desc { font-size: 0.9rem; margin-top: 0.5rem; }
+
+    /* ─── Sizing & Equal Heights for Selector Containers ─── */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        min-height: 145px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+    }
+    div[data-testid="stRadio"] > label {
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* ─── Mobile Responsiveness & Adaptations ─── */
+    @media (max-width: 768px) {
+        /* Let selection containers stack and size dynamically on mobile */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            min-height: auto !important;
+            margin-bottom: 0.8rem !important;
+            padding: 0.8rem !important;
+        }
+        /* Convert radio group options to vertical stack to prevent squishing */
+        div[data-testid="stRadio"] > div[role="radiogroup"] {
+            flex-direction: column !important;
+            gap: 0.4rem !important;
+        }
+        div[data-testid="stRadio"] > div[role="radiogroup"] > label {
+            width: 100% !important;
+            padding: 0.5rem 0.8rem !important;
+        }
+        /* Adjust header, widgets and spacing for mobile */
+        .main-header {
+            padding: 1.2rem 1.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+        .main-header h1 {
+            font-size: 1.6rem !important;
+        }
+        .main-header p {
+            font-size: 0.85rem !important;
+        }
+        .metric-card {
+            padding: 1rem !important;
+            margin-bottom: 0.6rem !important;
+        }
+        .metric-value {
+            font-size: 1.8rem !important;
+        }
+        /* Recommendation card responsive stack */
+        .reco-card {
+            padding: 1.2rem 1.2rem !important;
+        }
+        .reco-card .reco-line {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.4rem !important;
+            padding: 0.6rem 0.8rem !important;
+        }
+        .reco-card .reco-qty {
+            font-size: 1.2rem !important;
+            min-width: auto !important;
+        }
+        .reco-card .reco-action {
+            min-width: auto !important;
+        }
+        .reco-card .reco-cost {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.8rem !important;
+        }
+        .reco-card .reco-cost-item {
+            text-align: left !important;
+            width: 100% !important;
+        }
+        .reco-top-badges {
+            flex-direction: column !important;
+            gap: 0.6rem !important;
+        }
+        .badge-box {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
