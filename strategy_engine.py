@@ -90,6 +90,8 @@ def montar_estrategia(
     vies: str,           # "ALTA" ou "QUEDA"
     protecao: str,       # "CLASSICA" ou "TOTAL"
     qtd_base: int = 200, # quantidade base de opções de especulação
+    dias_venc_min: int = 45,
+    dias_venc_max: int = 70,
 ) -> dict | None:
     """
     Monta a estrutura de proteção assimétrica completa.
@@ -99,6 +101,8 @@ def montar_estrategia(
         vies: "ALTA" (Strap) ou "QUEDA" (Strip)
         protecao: "CLASSICA" (2:1 fixo) ou "TOTAL" (cobertura dinâmica)
         qtd_base: Quantidade base de opções de especulação
+        dias_venc_min: Dias mínimos para vencimento das opções
+        dias_venc_max: Dias máximos para vencimento das opções
 
     Returns:
         Dict com:
@@ -106,7 +110,7 @@ def montar_estrategia(
         - protecao: {ticker_opcao, tipo, strike, preco, delta, qtd, custo}
         - custo_total, preco_ativo, vies, tipo_protecao
     """
-    df_opcoes = buscar_opcoes_ativo(ticker)
+    df_opcoes = buscar_opcoes_ativo(ticker, dias_min=dias_venc_min, dias_max=dias_venc_max)
 
     if df_opcoes.empty:
         return None

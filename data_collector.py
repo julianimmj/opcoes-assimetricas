@@ -298,7 +298,7 @@ def _obter_preco_ativo_yfinance(ticker: str) -> float | None:
 
 
 @st.cache_data(ttl=600, show_spinner=False)
-def buscar_opcoes_ativo(ticker: str, dias_min: int = 20, dias_max: int = 90) -> pd.DataFrame:
+def buscar_opcoes_ativo(ticker: str, dias_min: int = 45, dias_max: int = 70) -> pd.DataFrame:
     """
     Busca e calcula gregas/IV para opções de um único ativo.
     Usa opcoes.net.br como fonte primária de preço, yfinance como fallback.
@@ -342,7 +342,7 @@ def buscar_opcoes_ativo(ticker: str, dias_min: int = 20, dias_max: int = 90) -> 
 #  CÁLCULO DO SCREENER EM PARALELO
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def processar_ativo_screener(ticker: str, closes: pd.Series, dias_min: int = 20, dias_max: int = 90) -> dict | None:
+def processar_ativo_screener(ticker: str, closes: pd.Series, dias_min: int = 45, dias_max: int = 70) -> dict | None:
     """Processa um ativo para o screener: calcula vol histórica, IVs de opções, Rank/Percentile."""
     try:
         preco_ativo = float(closes.iloc[-1])

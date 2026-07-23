@@ -806,6 +806,27 @@ def render_sidebar():
             help="Diferença máxima de vol entre calls e puts"
         )
 
+        st.markdown("### 📅 Janela de Vencimento")
+        dias_venc_min = st.number_input(
+            "Dias mínimos para vencimento",
+            min_value=1,
+            max_value=365,
+            value=45,
+            step=5,
+            help="Número mínimo de dias corridos até o vencimento das opções"
+        )
+        dias_venc_max = st.number_input(
+            "Dias máximos para vencimento",
+            min_value=1,
+            max_value=365,
+            value=70,
+            step=5,
+            help="Número máximo de dias corridos até o vencimento das opções"
+        )
+
+        if dias_venc_min > dias_venc_max:
+            st.warning("⚠️ Dias mínimos não pode ser maior que dias máximos.")
+
         st.markdown("### 🎯 Estratégia")
         qtd_base = st.number_input(
             "Quantidade base (opções de especulação)",
@@ -828,6 +849,8 @@ def render_sidebar():
         "iv_rank_max": iv_rank_max,
         "diff_vol_max": diff_vol_max,
         "qtd_base": qtd_base,
+        "dias_venc_min": dias_venc_min,
+        "dias_venc_max": dias_venc_max,
     }
 
 
@@ -881,6 +904,8 @@ def main():
                 iv_percentile_max=params["iv_percentile_max"],
                 iv_rank_max=params["iv_rank_max"],
                 diff_vol_max=params["diff_vol_max"],
+                dias_venc_min=params["dias_venc_min"],
+                dias_venc_max=params["dias_venc_max"],
                 progress_callback=on_progress,
             )
 
@@ -1012,6 +1037,8 @@ def main():
                     vies=vies_code,
                     protecao=protecao_code,
                     qtd_base=params["qtd_base"],
+                    dias_venc_min=params["dias_venc_min"],
+                    dias_venc_max=params["dias_venc_max"],
                 )
 
             if resultado:

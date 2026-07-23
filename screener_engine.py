@@ -16,6 +16,8 @@ def executar_screener(
     iv_percentile_max: float = 50.0,
     iv_rank_max: float = 50.0,
     diff_vol_max: float = 15.0,
+    dias_venc_min: int = 45,
+    dias_venc_max: int = 70,
     progress_callback=None,
 ) -> pd.DataFrame:
     """
@@ -51,7 +53,7 @@ def executar_screener(
     # A velocidade é incrível porque cada thread busca a grade de opções de um ativo simultaneamente.
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {
-            executor.submit(processar_ativo_screener, ticker, dados_historicos[ticker]): ticker
+            executor.submit(processar_ativo_screener, ticker, dados_historicos[ticker], dias_venc_min, dias_venc_max): ticker
             for ticker in ativos_para_processar
         }
         
